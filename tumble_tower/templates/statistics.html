@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Tower Statistics – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div>
+    <h2 style="font-family: var(--font-serif); font-size: 30px; color: var(--dark-brown);">Tower Statistics & Analytics</h2>
+    <p style="color: var(--text-muted); font-size: 15px;">
+      Live mathematical telemetry of the active tower equilibrium and global game history saved in SQLite.
+    </p>
+  </div>
+
+  <!-- Live Active Tower Metrics -->
+  <div class="card" style="border: 2px solid var(--primary-beige);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 class="card-title">Live Match Equilibrium: {{ game.game_id }}</h3>
+        <span style="font-size: 13px; color: var(--text-muted);">
+          Current contestant: <strong>{{ game.current_player }}</strong> &bull; Next: <strong>{{ game.next_player }}</strong>
+        </span>
+      </div>
+      <span class="badge badge-{{ game.stability.status }}" style="font-size: 14px; padding: 6px 14px;">
+        TOWER {{ game.stability.status|upper }}
+      </span>
+    </div>
+
+    <!-- 6 Live Metric Tiles -->
+    <div class="stats-grid" style="margin-bottom: 16px;">
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Current Levels</span>
+        <span class="metric-value">{{ game.total_levels }}</span>
+        <span class="metric-desc">Initial: 18 (Grown +{{ game.total_levels - 18 }})</span>
+      </div>
+
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Active Tower Blocks</span>
+        <span class="metric-value">{{ game.blocks_remaining }} / 54</span>
+        <span class="metric-desc">In tower structure</span>
+      </div>
+
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Valid Moves Completed</span>
+        <span class="metric-value">{{ game.total_moves }}</span>
+        <span class="metric-desc">Successful extractions & placements</span>
+      </div>
+
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Stability Score</span>
+        <span class="metric-value">{{ game.stability.stability_percentage }}%</span>
+        <span class="metric-desc">Center-of-Mass Margin</span>
+      </div>
+
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Imbalance Metric</span>
+        <span class="metric-value">{{ game.stability.max_imbalance }}</span>
+        <span class="metric-desc">Lateral deviation index</span>
+      </div>
+
+      <div class="metric-card" style="background-color: var(--bg-secondary);">
+        <span class="metric-label">Undo Stack Size</span>
+        <span class="metric-value">{{ game.history|length }}</span>
+        <span class="metric-desc">Available restoration checkpoints</span>
+      </div>
+    </div>
+
+    <!-- Stability Status Breakdown -->
+    <div style="background-color: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--borders);">
+      <strong style="color: var(--dark-brown); font-size: 13px;">Physics Telemetry:</strong>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+        {{ game.stability.reason }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Two Column: Global SQLite Records & Contestant Rankings -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+    <!-- Historical Records -->
+    <div class="card">
+      <h3 class="card-title">Lifetime System Records</h3>
+      <p class="card-subtitle">Aggregated across all SQLite database entries.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 14px; background-color: var(--bg-secondary); border-radius: var(--radius-md);">
+          <span style="color: var(--text-muted); font-size: 14px;">Total Games Initialized:</span>
+          <strong style="color: var(--dark-brown);">{{ stats.total_games }}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; padding: 10px 14px; background-color: var(--bg-secondary); border-radius: var(--radius-md);">
+          <span style="color: var(--text-muted); font-size: 14px;">Matches Played to Completion:</span>
+          <strong style="color: var(--dark-brown);">{{ stats.finished_games }}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; padding: 10px 14px; background-color: var(--bg-secondary); border-radius: var(--radius-md);">
+          <span style="color: var(--text-muted); font-size: 14px;">Tallest Recorded Tower:</span>
+          <strong style="color: var(--dark-brown);">{{ stats.max_level }} Levels</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; padding: 10px 14px; background-color: var(--bg-secondary); border-radius: var(--radius-md);">
+          <span style="color: var(--text-muted); font-size: 14px;">Average Moves / Match:</span>
+          <strong style="color: var(--dark-brown);">{{ stats.avg_moves }} Moves</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contestant Leaderboard -->
+    <div class="card">
+      <h3 class="card-title">Contestant Leaderboard</h3>
+      <p class="card-subtitle">Highest victory count and participation.</p>
+
+      {% if stats.leaderboard %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Contestant</th>
+              <th>Victories</th>
+              <th>Matches</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in stats.leaderboard %}
+              <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td><span class="badge badge-stable">{{ p.games_won }}</span></td>
+                <td>{{ p.games_played }}</td>
+                <td>
+                  {% if p.games_played > 0 %}
+                    {{ (p.games_won / p.games_played * 100)|round|int }}%
+                  {% else %}
+                    0%
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="font-size: 13px; color: var(--text-muted); font-style: italic;">No player records yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

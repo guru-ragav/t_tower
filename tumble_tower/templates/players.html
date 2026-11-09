@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Player Management – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div>
+    <h2 style="font-family: var(--font-serif); font-size: 30px; color: var(--dark-brown);">Player Management</h2>
+    <p style="color: var(--text-muted); font-size: 15px;">
+      Register and manage contestants for round-robin FIFO turn queuing in active Tumble Tower matches.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 28px;">
+
+    <!-- Add Player Form -->
+    <div class="card">
+      <h3 class="card-title">Register New Player</h3>
+      <p class="card-subtitle">Adds a player record into the SQLite database.</p>
+
+      <form action="{{ url_for('add_player') }}" method="POST">
+        <div class="form-group">
+          <label class="form-label" for="player_name">Contestant Name</label>
+          <input type="text" id="player_name" name="name" class="form-input" placeholder="e.g. Morgan" required maxlength="30">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          Add Player to Roster
+        </button>
+      </form>
+
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borders); font-size: 12px; color: var(--text-muted);">
+        <strong style="color: var(--dark-brown);">Turn Mechanism:</strong> Players added here can be selected during New Game setup to participate in the game's FIFO (First-In-First-Out) Queue.
+      </div>
+    </div>
+
+    <!-- Players Roster Table -->
+    <div class="card">
+      <h3 class="card-title">Registered Contestants</h3>
+      <p class="card-subtitle">Lifetime match participation, victories, and management.</p>
+
+      {% if players %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Contestant</th>
+                <th>Wins</th>
+                <th>Matches</th>
+                <th>Win Rate</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in players %}
+                <tr>
+                  <td>
+                    <strong>{{ p.name }}</strong>
+                    <div style="font-size: 11px; color: var(--text-muted);">Registered: {{ p.created_at[:10] }}</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-stable">{{ p.games_won }}</span>
+                  </td>
+                  <td>{{ p.games_played }}</td>
+                  <td>
+                    {% if p.games_played > 0 %}
+                      {{ (p.games_won / p.games_played * 100)|round|int }}%
+                    {% else %}
+                      0%
+                    {% endif %}
+                  </td>
+                  <td>
+                    <form action="{{ url_for('remove_player') }}" method="POST" style="margin: 0;">
+                      <input type="hidden" name="name" value="{{ p.name }}">
+                      <button type="submit" class="btn btn-danger btn-sm" onclick="return true;">
+                        Remove
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="font-size: 14px; color: var(--text-muted); font-style: italic;">
+          No registered contestants yet. Use the form on the left to add players.
+        </p>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

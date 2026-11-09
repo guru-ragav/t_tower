@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}New Game Setup – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 840px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Page Header -->
+  <div>
+    <h2 style="font-family: var(--font-serif); font-size: 30px; color: var(--dark-brown);">New Tower Match Setup</h2>
+    <p style="color: var(--text-muted); font-size: 15px;">
+      Configure participants for the FIFO turn queue, select physical difficulty thresholds, and build an 18-level 54-block tower.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px;">
+
+    <!-- Left Column: New Game Form -->
+    <div class="card">
+      <form action="{{ url_for('setup') }}" method="POST">
+
+        <!-- Select Players from Database -->
+        <div class="form-group">
+          <label class="form-label">Select Registered Players (FIFO Turn Queue)</label>
+          <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px;">
+            Check players in the order you wish them to take turns:
+          </span>
+
+          <div class="choice-list">
+            {% for player in all_players %}
+              <label class="choice-label">
+                <input type="checkbox" name="players" value="{{ player.name }}" {% if loop.index <= 2 %}checked{% endif %}>
+                <span style="font-weight: 600; color: var(--dark-brown);">{{ player.name }}</span>
+                <span style="font-size: 12px; color: var(--text-muted); margin-left: auto;">
+                  {{ player.games_won }} Wins / {{ player.games_played }} Matches
+                </span>
+              </label>
+            {% else %}
+              <p style="font-size: 13px; color: var(--text-muted); font-style: italic;">
+                No players registered yet. Add a new player below.
+              </p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Add Quick New Player -->
+        <div class="form-group" style="background-color: var(--bg-secondary); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--borders);">
+          <label class="form-label" for="custom_player">Add New Participant (Optional)</label>
+          <input type="text" id="custom_player" name="custom_player" class="form-input" placeholder="Enter player name (e.g. Jordan)">
+          <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
+            Will automatically be registered to SQLite and enqueued into this match.
+          </span>
+        </div>
+
+        <!-- Difficulty Selection -->
+        <div class="form-group">
+          <label class="form-label">Equilibrium Difficulty</label>
+          <div class="choice-list">
+            <label class="choice-label">
+              <input type="radio" name="difficulty" value="easy">
+              <div>
+                <strong style="color: var(--dark-brown);">Easy Mode</strong>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Loose stability tolerances. High resistance to overhangs and single block pivots.</p>
+              </div>
+            </label>
+
+            <label class="choice-label">
+              <input type="radio" name="difficulty" value="medium" checked>
+              <div>
+                <strong style="color: var(--dark-brown);">Standard Medium Mode (Recommended)</strong>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Realistic center-of-mass physics. Demands tactical block placement.</p>
+              </div>
+            </label>
+
+            <label class="choice-label">
+              <input type="radio" name="difficulty" value="hard">
+              <div>
+                <strong style="color: var(--dark-brown);">Hard / Master Mode</strong>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Strict balance margins. Opposite cantilever pivots instantly collapse tower.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn btn-primary btn-full btn-lg">
+            Construct Tower & Start Game
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Right Column: Continue Saved Games & Rules Summary -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- Continue Saved Games -->
+      <div class="card">
+        <h3 class="card-title" style="font-size: 17px;">Continue Saved Game</h3>
+        <p class="card-subtitle">Resume an uncompleted session.</p>
+
+        {% if saved_games %}
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for g in saved_games %}
+              <div style="padding: 12px; background-color: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--borders); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="font-family: var(--font-mono); font-size: 12px; color: var(--dark-brown);">{{ g.id }}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">
+                    {{ g.total_levels }} Levels &bull; {{ g.current_player }}'s turn
+                  </div>
+                </div>
+                <a href="{{ url_for('load_game', game_id=g.id) }}" class="btn btn-secondary btn-sm">Load</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="font-size: 13px; color: var(--text-muted); font-style: italic;">No pending saved games.</p>
+        {% endif %}
+      </div>
+
+      <!-- Setup Summary Card -->
+      <div class="card" style="background-color: var(--bg-secondary);">
+        <h4 style="font-family: var(--font-serif); font-size: 15px; color: var(--dark-brown); margin-bottom: 8px;">
+          What gets generated:
+        </h4>
+        <ul style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.7;">
+          <li><strong>18 Level Tower:</strong> Initialized as a Doubly Linked List.</li>
+          <li><strong>54 Wooden Blocks:</strong> 3 blocks per level, alternating orientations.</li>
+          <li><strong>FIFO Player Queue:</strong> Round-robin turn management.</li>
+          <li><strong>LIFO History Stack:</strong> Ready for undo operations.</li>
+          <li><strong>Auxiliary Stack:</strong> Ready to safely hold overhead blocks during extraction.</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

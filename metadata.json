@@ -1,0 +1,6 @@
+{
+  "name": "Tumble Tower",
+  "description": "A collegiate-grade Tumble Tower web application powered by Python 3, Flask, SQLite, and custom data structures (Stack, Queue, LinkedList).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

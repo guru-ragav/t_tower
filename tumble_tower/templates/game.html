@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Game Play – Tumble Tower{% endblock %}
+
+{% block content %}
+<div class="game-grid">
+
+  <!-- ================= LEFT COLUMN: PLAYER TURN & FIFO QUEUE ================= -->
+  <aside class="sidebar-panel">
+
+    <!-- Active Player Card -->
+    <div class="card player-turn-card">
+      <div class="turn-avatar">
+        {{ (game.current_player or "P")[0]|upper }}
+      </div>
+      <div class="turn-label">Current Player Turn</div>
+      <div class="turn-name">{{ game.current_player or "None" }}</div>
+      <div class="turn-next">
+        Next in line: <strong>{{ game.next_player or "None" }}</strong>
+      </div>
+    </div>
+
+    <!-- FIFO Player Turn Queue Display -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="font-family: var(--font-serif); font-size: 16px; color: var(--dark-brown);">Player Turn Queue</h4>
+        <span class="badge" style="background-color: var(--bg-secondary); color: var(--muted-brown); font-family: var(--font-mono); font-size: 11px;">
+          FIFO Order
+        </span>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        After each successful move, the front player is dequeued and appended to the rear:
+      </p>
+
+      <ul class="queue-list">
+        {% for player in game.player_queue %}
+          <li class="queue-item {% if loop.first %}active{% endif %}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              {% if loop.first %}
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--dark-brown);"></span>
+              {% else %}
+                <span style="color: var(--muted-brown); font-size: 12px;">{{ loop.index }}.</span>
+              {% endif %}
+              <span>{{ player }}</span>
+            </div>
+            <span class="queue-badge">
+              {% if loop.first %}FRONT / ACTIVE{% elif loop.index == 2 %}NEXT{% else %}IN QUEUE{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Tower Stability Indicator -->
+    <div class="card">
+      <h4 style="font-family: var(--font-serif); font-size: 16px; color: var(--dark-brown); margin-bottom: 12px;">
+        Tower Stability
+      </h4>
+
+      <div class="stability-meter-box">
+        <div class="meter-header">
+          <span style="text-transform: capitalize;">{{ game.stability.status }}</span>
+          <span style="font-family: var(--font-mono);">{{ game.stability.stability_percentage }}%</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-bar {{ game.stability.status }}" style="width: {{ game.stability.stability_percentage }}%;"></div>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+        <strong style="color: var(--dark-brown);">Status:</strong> {{ game.stability.reason }}
+      </div>
+
+      <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted); border-top: 1px dashed var(--borders); padding-top: 8px;">
+        Difficulty setting: <strong style="text-transform: capitalize; color: var(--dark-brown);">{{ game.difficulty }}</strong>
+      </div>
+    </div>
+
+    <!-- Quick Game Navigation & Reset -->
+    <div class="card" style="background-color: var(--bg-secondary); padding: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <form action="{{ url_for('game_restart') }}" method="POST" onsubmit="return true;">
+          <button type="submit" class="btn btn-secondary btn-sm btn-full">
+            Rebuild Tower (New Layout)
+          </button>
+        </form>
+        <a href="{{ url_for('setup') }}" class="btn btn-secondary btn-sm btn-full" style="text-align: center;">
+          Switch Players / Difficulty
+        </a>
+      </div>
+    </div>
+
+  </aside>
+
+
+  <!-- ================= CENTER COLUMN: THE INTERACTIVE TOWER ================= -->
+  <main class="tower-arena">
+
+    <!-- Arena Header with Level and Block Stats -->
+    <div class="arena-header">
+      <div>
+        <h3 style="font-family: var(--font-serif); font-size: 20px; color: var(--dark-brown);">
+          Tumble Tower <span style="font-size: 14px; color: var(--muted-brown); font-family: var(--font-mono);">({{ game.game_id }})</span>
+        </h3>
+        <span style="font-size: 12px; color: var(--text-muted);">
+          Click any accessible block to select it, then extract it to your hand.
+        </span>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <span class="badge" style="background-color: var(--bg-card); border: 1px solid var(--borders); color: var(--dark-brown);">
+          Levels: {{ game.total_levels }}
+        </span>
+        <span class="badge" style="background-color: var(--bg-card); border: 1px solid var(--borders); color: var(--dark-brown);">
+          Blocks: {{ game.blocks_remaining }}/54
+        </span>
+      </div>
+    </div>
+
+    <!-- Game Over / Collapse Alert Banner -->
+    {% if game.status == 'collapsed' %}
+      <div class="collapse-alert">
+        <h3>TIMBER! THE TOWER HAS COLLAPSED!</h3>
+        <p>
+          {{ game.collapse_reason }}
+        </p>
+        <div style="display: inline-block; background-color: #FFFDF8; padding: 8px 16px; border-radius: var(--radius-md); border: 1px solid var(--borders); margin-bottom: 16px;">
+          Winner: <strong style="color: var(--dark-brown); font-size: 16px;">{{ game.winner or "Previous Player" }}</strong> &bull;
+          Collapsing Turn by: <strong>{{ game.current_player }}</strong>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          {% if game.can_undo %}
+            <form action="{{ url_for('game_undo') }}" method="POST">
+              <button type="submit" class="btn btn-success btn-lg">
+                Undo Collapse (Rescue Tower)
+              </button>
+            </form>
+          {% endif %}
+          <form action="{{ url_for('game_restart') }}" method="POST">
+            <button type="submit" class="btn btn-primary btn-lg">
+              Rebuild New Tower
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- The 3D Interactive Tower -->
+    <div class="tower-stage">
+
+      <div class="tower-stack">
+        <!-- Render levels from highest (tail) down to level 1 (head) -->
+        {% for level in game.levels %}
+          <div class="level-row {{ level.orientation }}">
+            
+            <!-- Level Indicator and Orientation -->
+            <div class="level-meta" title="Level {{ level.level_number }} ({{ level.orientation }})">
+              L{{ "%02d"|format(level.level_number) }} <span style="font-size: 9px; opacity: 0.7;">{% if level.orientation == 'horizontal' %}H{% else %}V{% endif %}</span>
+            </div>
+
+            <!-- 3 Block Slots (Left:0, Center:1, Right:2) -->
+            <div class="level-blocks">
+              {% for slot in [0, 1, 2] %}
+                {% set blk = level.blocks[slot] %}
+                <div class="block-slot">
+                  {% if blk %}
+                    <form action="{{ url_for('game_select') }}" method="POST" class="block-form">
+                      <input type="hidden" name="block_id" value="{{ blk.id }}">
+                      <button 
+                        type="submit" 
+                        class="block-btn {% if game.selected_block_id == blk.id %}selected{% endif %} {% if blk.id not in accessible_ids %}inaccessible{% endif %}"
+                        style="background: linear-gradient(180deg, {{ blk.hex_color }} 0%, {{ blk.dark_hex }} 100%);"
+                        title="{{ blk.id }}: {{ blk.color }} (L{{ level.level_number }}, Pos {{ slot }}){% if blk.id not in accessible_ids %} - Protected / Inaccessible{% endif %}"
+                        {% if game.status == 'collapsed' or game.held_block %}disabled{% endif %}
+                      >
+                        <span class="block-id-text">#{{ blk.number }}</span>
+                        <span class="block-wood-tag">{{ blk.color.split()[0] }}</span>
+                      </button>
+                    </form>
+                  {% else %}
+                    <!-- Empty slot where a block was previously removed -->
+                    <div class="block-btn empty-slot" title="Vacant slot (L{{ level.level_number }}, Pos {{ slot }})">
+                      <span style="color: var(--muted-brown); font-size: 10px;">empty</span>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Wooden Base Foundation Pedestal -->
+      <div class="tower-pedestal">
+        Tower Foundation Base &bull; Ground Level 0
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- ================= RIGHT COLUMN: ACTIONS, UNDO & AUX STACK ================= -->
+  <aside class="sidebar-panel">
+
+    <!-- Action Controls Card -->
+    <div class="card action-box">
+      <h4 style="font-family: var(--font-serif); font-size: 18px; color: var(--dark-brown); margin-bottom: 6px;">
+        Turn Action Controls
+      </h4>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        Follow the 2-step Jenga turn: Extract an accessible block, then place it on the tower apex.
+      </p>
+
+      <!-- Held Block in Hand Status -->
+      <div class="held-block-display">
+        <div class="held-block-title">Currently Held Block:</div>
+        {% if game.held_block %}
+          <div class="held-block-item" style="background-color: {{ game.held_block.hex_color }}; color: var(--dark-brown);">
+            {{ game.held_block.id }} &bull; {{ game.held_block.color }}
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+            Extracted from Level {{ game.held_block.level }}. Ready for top placement!
+          </p>
+        {% else %}
+          <span style="font-size: 13px; color: var(--text-muted); font-style: italic;">
+            [ No block in hand ]
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Selected Block Action -->
+      {% if game.selected_block_id and not game.held_block %}
+        <div style="background-color: var(--bg-secondary); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px; border: 1px solid var(--borders);">
+          <div style="font-size: 12px; color: var(--muted-brown); font-weight: 700; text-transform: uppercase;">
+            Selected Block:
+          </div>
+          <div style="font-size: 16px; font-weight: 700; color: var(--dark-brown); font-family: var(--font-mono);">
+            {{ game.selected_block_id }}
+          </div>
+          {% if game.selected_block_id in accessible_ids %}
+            <span class="badge badge-stable" style="margin-top: 4px; font-size: 11px;">Accessible for Extraction</span>
+          {% else %}
+            <span class="badge badge-critical" style="margin-top: 4px; font-size: 11px;">Protected / Inaccessible</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Primary Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        
+        <!-- Step 1: Remove Selected Block Form -->
+        <form action="{{ url_for('game_remove') }}" method="POST">
+          <button 
+            type="submit" 
+            class="btn btn-primary btn-full"
+            {% if not game.selected_block_id or game.held_block or game.status == 'collapsed' or game.selected_block_id not in accessible_ids %}disabled{% endif %}
+          >
+            Extract Selected Block
+          </button>
+        </form>
+
+        <!-- Step 2: Place Block at Apex Form -->
+        <form action="{{ url_for('game_place') }}" method="POST">
+          <button 
+            type="submit" 
+            class="btn btn-success btn-full"
+            {% if not game.held_block or game.status == 'collapsed' %}disabled{% endif %}
+          >
+            Place Block on Top (Level {{ game.total_levels }})
+          </button>
+        </form>
+
+        <!-- Undo Button (LIFO History Stack) -->
+        <form action="{{ url_for('game_undo') }}" method="POST">
+          <button 
+            type="submit" 
+            class="btn btn-secondary btn-full"
+            {% if not game.can_undo %}disabled{% endif %}
+            title="Reverses the most recent move and restores tower arrangement"
+          >
+            Undo Last Move (Stack: {{ game.history|length }})
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Auxiliary Stack Trace Box (Academic CS Demonstration) -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4 style="font-family: var(--font-serif); font-size: 15px; color: var(--dark-brown);">
+          Auxiliary Stack Operations
+        </h4>
+        <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-size: 10px;">
+          LIFO Algorithm
+        </span>
+      </div>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">
+        During extraction, blocks above the target level are popped into an auxiliary stack and restored in reverse order:
+      </p>
+
+      <div class="aux-trace-card">
+        {% if game.auxiliary_trace %}
+          {% for op in game.auxiliary_trace %}
+            <div class="aux-trace-item">
+              <span class="aux-step-badge">Step {{ op.step }}:</span>
+              <span>{{ op.description }}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="color: var(--text-muted); font-style: italic; padding: 8px 0;">
+            No extraction performed yet this turn. Select an accessible block and click 'Extract Selected Block' to observe the stack operations.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Move History Snippet -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4 style="font-family: var(--font-serif); font-size: 15px; color: var(--dark-brown);">Recent Moves</h4>
+        <a href="{{ url_for('history') }}" style="font-size: 12px; color: var(--muted-brown); text-decoration: none;">View All &rarr;</a>
+      </div>
+
+      {% if game.history %}
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% for m in game.history[-3:]|reverse %}
+            <div style="font-size: 12px; padding: 8px 10px; background-color: var(--bg-secondary); border-radius: var(--radius-sm); border: 1px solid var(--borders);">
+              <div style="display: flex; justify-content: space-between; font-weight: 600; color: var(--dark-brown);">
+                <span>Move #{{ m.move_number }}: {{ m.player_name }}</span>
+                <span style="font-family: var(--font-mono);">{{ m.block_id }}</span>
+              </div>
+              <div style="color: var(--text-muted); font-size: 11px; margin-top: 2px;">
+                L{{ m.prev_level }} (Pos {{ m.prev_position }}) &rarr; L{{ m.new_level }} (Pos {{ m.new_position }})
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="font-size: 12px; color: var(--text-muted); font-style: italic;">
+          No moves made yet. Initial 18-level tower standing tall.
+        </p>
+      {% endif %}
+    </div>
+
+  </aside>
+
+</div>
+{% endblock %}

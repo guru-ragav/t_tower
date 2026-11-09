@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}How to Play & Data Structures Architecture – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Page Header -->
+  <div>
+    <h2 style="font-family: var(--font-serif); font-size: 32px; color: var(--dark-brown);">
+      Game Rules & Computer Science Architecture
+    </h2>
+    <p style="color: var(--text-muted); font-size: 15px;">
+      Comprehensive documentation of gameplay rules, physical equilibrium mechanics, and Python data structure implementations.
+    </p>
+  </div>
+
+  <!-- Part 1: Official Game Rules -->
+  <div class="card">
+    <h3 class="card-title">1. Tumble Tower Rules</h3>
+    <p class="card-subtitle">Official tournament constraints governing block extractions and tower apex construction.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.7; color: var(--text-main);">
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--muted-brown);">
+        <strong>Rule 1 &bull; Two-Step Turn:</strong> On their turn, the active player must extract exactly one accessible block from the tower and place it on top of the tower before the turn rotates.
+      </div>
+
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--muted-brown);">
+        <strong>Rule 2 &bull; Foundation Protection:</strong> Blocks on Level 1 (the base level) cannot be removed. They anchor the entire structure to the pedestal.
+      </div>
+
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--muted-brown);">
+        <strong>Rule 3 &bull; Top Levels Protection:</strong> Blocks located in the topmost incomplete level (where blocks are actively being placed) or in the top three complete levels cannot be extracted. Blocks must be taken from below these protected levels.
+      </div>
+
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--muted-brown);">
+        <strong>Rule 4 &bull; Anti-Hollowing Protection:</strong> You cannot remove the last remaining block on any level, as doing so leaves zero physical support for all upper layers.
+      </div>
+
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--muted-brown);">
+        <strong>Rule 5 &bull; Apex Placement:</strong> An extracted block must be placed onto the highest level. Levels fill with 3 blocks in alternating orientations (horizontal on odd levels, vertical on even levels). Once a 3-block layer is complete, a new layer begins.
+      </div>
+
+      <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--error);">
+        <strong>Rule 6 &bull; Collapse & Victory Condition:</strong> If a move causes the center-of-mass to exceed the support base polygon, the tower collapses! The player whose move triggered the collapse loses, and the immediately preceding player in the FIFO queue is crowned the winner!
+      </div>
+    </div>
+  </div>
+
+  <!-- Part 2: CS Data Structures Implementation -->
+  <div class="card">
+    <h3 class="card-title">2. Data Structures & Algorithms Implementation</h3>
+    <p class="card-subtitle">Detailed breakdown of native Python classes engineered for this application.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- A. Stack Implementation -->
+      <div style="border: 1px solid var(--borders); border-radius: var(--radius-md); padding: 20px; background-color: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-family: var(--font-serif); font-size: 18px; color: var(--dark-brown);">A. Stack Class (LIFO – Last-In, First-Out)</h4>
+          <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-family: var(--font-mono);">stack.py</span>
+        </div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">
+          Implemented methods: <code>push()</code>, <code>pop()</code>, <code>peek()</code>, <code>is_empty()</code>, <code>size()</code>, <code>display()</code>.
+        </p>
+        <ul style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.7;">
+          <li>
+            <strong>Auxiliary Block Storage:</strong> When a player extracts a block from Level <em>L</em>, all overhead blocks from levels &gt; <em>L</em> are popped and pushed onto an auxiliary stack. Once the target block is extracted, the auxiliary stack pops and restores each block back into its exact original position in reverse order (LIFO).
+          </li>
+          <li>
+            <strong>Multi-Step Undo Engine:</strong> Every committed move pushes a complete system state snapshot onto <code>HistoryStack</code>. Pressing "Undo" pops the top snapshot, restoring the previous tower arrangement, block locations, player turns, and stability metrics.
+          </li>
+        </ul>
+      </div>
+
+      <!-- B. Queue Implementation -->
+      <div style="border: 1px solid var(--borders); border-radius: var(--radius-md); padding: 20px; background-color: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-family: var(--font-serif); font-size: 18px; color: var(--dark-brown);">B. Queue Class (FIFO – First-In, First-Out)</h4>
+          <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-family: var(--font-mono);">queue.py</span>
+        </div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">
+          Implemented methods: <code>enqueue()</code>, <code>dequeue()</code>, <code>peek()</code>, <code>is_empty()</code>, <code>rotate()</code>, <code>rotate_backward()</code>.
+        </p>
+        <ul style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.7;">
+          <li>
+            <strong>Round-Robin Turn Scheduling:</strong> At match launch, players are enqueued. The active contestant is at the front (<code>peek()</code>). When their turn concludes with block placement, <code>rotate()</code> dequeues them from the front and appends them to the rear of the queue.
+          </li>
+          <li>
+            <strong>Undo Turn Synchronization:</strong> When an undo operation occurs, <code>rotate_backward()</code> shifts the rear contestant back to the front, seamlessly restoring the previous player's turn.
+          </li>
+        </ul>
+      </div>
+
+      <!-- C. Linked List Implementation -->
+      <div style="border: 1px solid var(--borders); border-radius: var(--radius-md); padding: 20px; background-color: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-family: var(--font-serif); font-size: 18px; color: var(--dark-brown);">C. Linked List Class (Doubly Linked Layer Hierarchy)</h4>
+          <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-family: var(--font-mono);">linked_list.py</span>
+        </div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">
+          Implemented classes: <code>LevelNode</code>, <code>LinkedList</code>. Methods: <code>insert_level()</code>, <code>insert_block()</code>, <code>delete_block()</code>, <code>traverse()</code>, <code>display()</code>.
+        </p>
+        <ul style="font-size: 13px; color: var(--text-main); padding-left: 20px; line-height: 1.7;">
+          <li>
+            <strong>Dynamic Vertical Growth:</strong> Each node represents one horizontal or vertical floor containing 3 block slots [0, 1, 2]. As the tower grows past 18 levels, new nodes are dynamically appended to the <code>tail</code>.
+          </li>
+          <li>
+            <strong>Bidirectional Traversal:</strong> Traversal from <code>tail</code> to <code>head</code> enables top-down rendering in HTML/CSS, while bottom-up traversal calculates physical center-of-gravity load distributions.
+          </li>
+        </ul>
+      </div>
+
+      <!-- D. Searching Algorithms -->
+      <div style="border: 1px solid var(--borders); border-radius: var(--radius-md); padding: 20px; background-color: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-family: var(--font-serif); font-size: 18px; color: var(--dark-brown);">D. Block Searching Algorithms</h4>
+          <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-family: var(--font-mono);">game_engine.py</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-main); line-height: 1.6;">
+          Supports multi-criteria searching by Block ID, integer number, natural wood grain colour, and level number. Recursively navigates the tower's linked list and held block buffers to report exact 3D coordinates, orientation, accessibility, and status reasons.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

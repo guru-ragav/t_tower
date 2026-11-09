@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Block Search – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div>
+    <h2 style="font-family: var(--font-serif); font-size: 30px; color: var(--dark-brown);">Block Search & Inspection</h2>
+    <p style="color: var(--text-muted); font-size: 15px;">
+      Search and track any of the 54 tower blocks across the active Linked List structure by unique ID, block number, wood grain colour, or level.
+    </p>
+  </div>
+
+  <!-- Search Filter Form -->
+  <div class="card" style="background-color: var(--bg-card); border: 2px solid var(--primary-beige);">
+    <form action="{{ url_for('search') }}" method="GET" style="display: grid; grid-template-columns: 200px 1fr 140px; gap: 16px; align-items: end;">
+      
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" for="query_type">Search Field</label>
+        <select name="query_type" id="query_type" class="form-select">
+          <option value="all" {% if query_type == 'all' %}selected{% endif %}>All Fields</option>
+          <option value="id" {% if query_type == 'id' %}selected{% endif %}>Block ID (e.g. BLK-15)</option>
+          <option value="number" {% if query_type == 'number' %}selected{% endif %}>Block Number (1–54)</option>
+          <option value="color" {% if query_type == 'color' %}selected{% endif %}>Wood Colour Tone</option>
+          <option value="level" {% if query_type == 'level' %}selected{% endif %}>Level Number (1–30+)</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" for="query_val">Search Query</label>
+        <input type="text" id="query_val" name="query_val" value="{{ query_val }}" class="form-input" placeholder="Type search term (e.g. Walnut, 24, BLK-03, Level 5)...">
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary btn-full">
+          Search
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Search Results Table -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 class="card-title">Search Results</h3>
+      <span class="badge" style="background-color: var(--bg-secondary); color: var(--dark-brown); font-family: var(--font-mono);">
+        Found {{ total_found }} Block(s)
+      </span>
+    </div>
+
+    {% if results %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Block</th>
+              <th>Wood Tone</th>
+              <th>Current Location</th>
+              <th>Orientation</th>
+              <th>Extraction Status</th>
+              <th>Quick Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in results %}
+              {% set blk = item.block %}
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 24px; height: 24px; border-radius: 4px; background: linear-gradient(135deg, {{ blk.hex_color }}, {{ blk.dark_hex }}); border: 1px solid rgba(92, 73, 56, 0.2);"></div>
+                    <div>
+                      <strong style="font-family: var(--font-mono); color: var(--dark-brown);">{{ blk.id }}</strong>
+                      <div style="font-size: 11px; color: var(--text-muted);">Number: #{{ blk.number }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span>{{ blk.color }}</span>
+                </td>
+                <td>
+                  <strong>Level {{ item.level }}</strong> &bull; {{ item.position_name }}
+                </td>
+                <td>
+                  <span style="text-transform: capitalize; font-size: 13px;">{{ item.orientation }}</span>
+                </td>
+                <td>
+                  {% if item.is_accessible %}
+                    <span class="badge badge-stable">Accessible</span>
+                  {% else %}
+                    <span class="badge badge-critical" title="{{ item.status_reason }}">Protected / Inaccessible</span>
+                  {% endif %}
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    {{ item.status_reason }}
+                  </div>
+                </td>
+                <td>
+                  {% if item.is_accessible %}
+                    <form action="{{ url_for('game_select') }}" method="POST" style="margin: 0;">
+                      <input type="hidden" name="block_id" value="{{ blk.id }}">
+                      <button type="submit" class="btn btn-secondary btn-sm">
+                        Select in Game
+                      </button>
+                    </form>
+                  {% else %}
+                    <span style="font-size: 12px; color: var(--text-muted); font-style: italic;">Locked</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 40px 20px;">
+        <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 12px;">No blocks matched your query "{{ query_val }}".</p>
+        <a href="{{ url_for('search') }}" class="btn btn-secondary">Clear Search Filter</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

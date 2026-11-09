@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Game History – Tumble Tower{% endblock %}
+
+{% block content %}
+<div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h2 style="font-family: var(--font-serif); font-size: 30px; color: var(--dark-brown);">Move History & Stack Log</h2>
+      <p style="color: var(--text-muted); font-size: 15px;">
+        Chronological audit of all player actions, block transpositions, and LIFO undo operations in active and previous matches.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      {% if game.can_undo %}
+        <form action="{{ url_for('game_undo') }}" method="POST">
+          <button type="submit" class="btn btn-secondary">
+            Undo Last Move (#{{ game.total_moves }})
+          </button>
+        </form>
+      {% endif %}
+      <a href="{{ url_for('gameplay') }}" class="btn btn-primary">Return to Game</a>
+    </div>
+  </div>
+
+  <!-- Active Match History Stack -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <h3 class="card-title">Active Match: Move History Stack (Match {{ game.game_id }})</h3>
+      <span class="badge" style="background-color: var(--primary-beige); color: var(--dark-brown); font-family: var(--font-mono);">
+        {{ game.history|length }} Moves on Stack
+      </span>
+    </div>
+    <p class="card-subtitle">
+      Items are pushed to this stack on each valid turn. Clicking 'Undo' pops the top item to restore previous state.
+    </p>
+
+    {% if game.history %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Move #</th>
+              <th>Contestant</th>
+              <th>Block ID</th>
+              <th>Previous Position</th>
+              <th>New Apex Position</th>
+              <th>Action Type</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in game.history|reverse %}
+              <tr {% if loop.first %}style="background-color: rgba(216, 198, 173, 0.25); font-weight: 600;"{% endif %}>
+                <td>
+                  <span style="font-family: var(--font-mono);">
+                    #{{ m.move_number }}
+                    {% if loop.first %}<span class="badge badge-stable" style="font-size: 10px; margin-left: 6px;">TOP (NEXT UNDO)</span>{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <strong>{{ m.player_name }}</strong>
+                </td>
+                <td>
+                  <span style="font-family: var(--font-mono); color: var(--dark-brown);">{{ m.block_id }}</span>
+                </td>
+                <td>
+                  Level {{ m.prev_level }} (Pos {{ m.prev_position }})
+                </td>
+                <td>
+                  Level {{ m.new_level }} (Pos {{ m.new_position }})
+                </td>
+                <td>
+                  <span class="badge" style="background-color: var(--bg-secondary); color: var(--muted-brown); font-size: 11px;">
+                    {{ m.operation }}
+                  </span>
+                </td>
+                <td style="font-size: 12px; color: var(--text-muted);">
+                  {{ m.timestamp }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+        <p style="font-size: 15px; margin-bottom: 8px;">No moves recorded yet in this match.</p>
+        <span style="font-size: 13px;">The history stack is currently empty. Make your first move in the Play Game screen!</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Past Games in SQLite Database -->
+  <div class="card">
+    <h3 class="card-title">Saved & Archived Matches (SQLite Database)</h3>
+    <p class="card-subtitle">Historical records of finished and ongoing tournament sessions.</p>
+
+    {% if all_games %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Game ID</th>
+              <th>Status</th>
+              <th>Difficulty</th>
+              <th>Total Moves</th>
+              <th>Max Levels</th>
+              <th>Outcome / Winner</th>
+              <th>Last Updated</th>
+              <th>Resume</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g in all_games %}
+              <tr>
+                <td>
+                  <strong style="font-family: var(--font-mono); color: var(--dark-brown);">{{ g.id }}</strong>
+                </td>
+                <td>
+                  {% if g.status == 'in_progress' %}
+                    <span class="badge badge-wobbly">In Progress</span>
+                  {% elif g.status == 'collapsed' %}
+                    <span class="badge badge-critical">Collapsed</span>
+                  {% else %}
+                    <span class="badge badge-stable">Completed</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span style="text-transform: capitalize;">{{ g.difficulty }}</span>
+                </td>
+                <td>{{ g.total_moves }}</td>
+                <td>{{ g.total_levels }} Levels</td>
+                <td>
+                  {% if g.winner %}
+                    <strong style="color: #435E37;">Won by {{ g.winner }}</strong>
+                  {% elif g.status == 'collapsed' %}
+                    <span style="color: #8C392D; font-size: 12px;">{{ g.collapse_reason[:45] }}...</span>
+                  {% else %}
+                    <span style="color: var(--text-muted);">Turn: {{ g.current_player }}</span>
+                  {% endif %}
+                </td>
+                <td style="font-size: 12px; color: var(--text-muted);">
+                  {{ g.updated_at[:16] }}
+                </td>
+                <td>
+                  <a href="{{ url_for('load_game', game_id=g.id) }}" class="btn btn-secondary btn-sm">
+                    View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="font-size: 14px; color: var(--text-muted); font-style: italic;">No previous games found in database.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Tumble Tower{% endblock %} – Python CS Web Application</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="{{ url_for('dashboard') }}" class="brand">
+        <div class="brand-icon">T</div>
+        <div class="brand-text">
+          <h1>Tumble Tower</h1>
+          <span>CS Data Structures</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+          <li><a href="{{ url_for('gameplay') }}" class="nav-link {% if active_page == 'game' %}active{% endif %}">Play Game</a></li>
+          <li><a href="{{ url_for('setup') }}" class="nav-link {% if active_page == 'setup' %}active{% endif %}">New Game</a></li>
+          <li><a href="{{ url_for('players') }}" class="nav-link {% if active_page == 'players' %}active{% endif %}">Players</a></li>
+          <li><a href="{{ url_for('search') }}" class="nav-link {% if active_page == 'search' %}active{% endif %}">Block Search</a></li>
+          <li><a href="{{ url_for('history') }}" class="nav-link {% if active_page == 'history' %}active{% endif %}">History</a></li>
+          <li><a href="{{ url_for('statistics') }}" class="nav-link {% if active_page == 'statistics' %}active{% endif %}">Statistics</a></li>
+          <li><a href="{{ url_for('instructions') }}" class="nav-link {% if active_page == 'instructions' %}active{% endif %}">How to Play</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flash Messaging (Server-side alerts) -->
+  <div class="container flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Primary Page Body -->
+  <main class="main-content">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>Tumble Tower &bull; Pure Python 3 & Flask &bull; Stack, Queue, LinkedList, SQLite &bull; No JavaScript</p>
+    </div>
+  </footer>
+</body>
+</html>
